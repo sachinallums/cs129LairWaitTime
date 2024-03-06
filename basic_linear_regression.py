@@ -17,9 +17,12 @@ def main():
 
     dataset = pd.read_csv('MASTER-cleaned_dataset - cleaned_dataset.csv')
     train, test = train_test_split(dataset, test_size=0.2)
+    test, crossValidation = train_test_split(test, test_size=0.5)
 
     X_train = np.array(train[["numInQueue"]])
     y_train = np.array(train['Wait Time'])
+    X_cross = np.array(crossValidation[["numInQueue"]])
+    Y_cross = np.array(crossValidation[["Wait Time"]])
     X_test = np.array(test[["numInQueue"]])
     y_test = np.array(test['Wait Time'])
 
@@ -31,23 +34,6 @@ def main():
 
     b_init = 0.01
     w_init = np.array([1])
-    print(f"w_init shape: {w_init.shape}, b_init type: {type(b_init)}")
-
-    # get a row from our training data
-    x_vec = X_train[0,:]
-    print(f"x_vec shape {x_vec.shape}, x_vec value: {x_vec}")
-
-    # make a prediction
-    f_wb = predict_single_loop(x_vec, w_init, b_init)
-    print(f"f_wb shape {f_wb.shape}, prediction: {f_wb}")
-
-    # get a row from our training data
-    x_vec = X_train[0,:]
-    print(f"x_vec shape {x_vec.shape}, x_vec value: {x_vec}")
-
-    # make a prediction
-    f_wb = predict(x_vec,w_init, b_init)
-    print(f"f_wb shape {f_wb.shape}, prediction: {f_wb}")
 
     # Compute and display cost using our pre-chosen optimal parameters. 
     cost = compute_cost(X_train, y_train, w_init, b_init)
@@ -61,9 +47,9 @@ def main():
     # initialize parameters
     initial_w = np.zeros_like(w_init)
     initial_b = 0.
-    # some gradient descent settings
     iterations = 1000
-    alpha = 5.0e-5
+    alpha = 5.0e-3
+
     # run gradient descent 
     w_final, b_final, J_hist = gradient_descent(X_train, y_train, initial_w, initial_b,
                                                     compute_cost, compute_gradient, 
@@ -81,6 +67,9 @@ def main():
     ax1.set_ylabel('Cost')             ;  ax2.set_ylabel('Cost') 
     ax1.set_xlabel('iteration step')   ;  ax2.set_xlabel('iteration step') 
     plt.show()
+
+    # Compute cost function for cross validation set
+    print(compute_cost(X_cross, Y_cross, w_final, b_final))
 
     # Plot for just numInQueue against Wait Time
     plt.scatter(X_train, y_train)
