@@ -14,30 +14,33 @@ from sklearn.model_selection import train_test_split
 np.set_printoptions(precision=3, suppress=True)
 
 def main(): 
-
-    dataset = pd.read_csv('MASTER-cleaned_dataset - cleaned_dataset.csv')
+    # Specify the data type for each column
+    dtype = {"waitTime": int, "daysLeftClean": float, "numInQueue": float}
+    dataset = pd.read_csv('master_database_March6_forModeling - master_database_March6 (1).csv', dtype=dtype)
     train, test = train_test_split(dataset, test_size=0.2)
     test, crossValidation = train_test_split(test, test_size=0.5)
 
-    X_train = np.array(train[["numInQueue"]])
-    y_train = np.array(train['Wait Time'])
-    X_cross = np.array(crossValidation[["numInQueue"]])
-    Y_cross = np.array(crossValidation[["Wait Time"]])
-    X_test = np.array(test[["numInQueue"]])
-    y_test = np.array(test['Wait Time'])
+    X_train = np.array(train[["numInQueue", "daysLeftClean"]])
+    y_train = np.array(train['waitTime'])
+    X_cross = np.array(crossValidation[["numInQueue", "daysLeftClean"]])
+    Y_cross = np.array(crossValidation[["waitTime"]])
+    X_test = np.array(test[["numInQueue", "daysLeftClean"]])
+    y_test = np.array(test['waitTime'])
 
     print(f"X Shape: {X_train.shape}, X Type:{type(X_train)})")
-    print(X_train)
     print(f"y Shape: {y_train.shape}, y Type:{type(y_train)})")
-    print(y_train)
+    print(f"X CV Shape: {X_cross.shape}, X CV Type:{type(X_train)})")
+    print(f"y CV Shape: {Y_cross.shape}, y CV Type:{type(y_train)})")
 
 
     b_init = 0.01
-    w_init = np.array([1])
+    w_init = np.array([1, 1])
 
-    # Compute and display cost using our pre-chosen optimal parameters. 
-    cost = compute_cost(X_train, y_train, w_init, b_init)
-    print(f'Cost at optimal w : {cost}')
+    print(f"Type of w: {type(w_init)}, and type of b: {type(b_init)}")
+
+    # # Compute and display cost using our pre-chosen optimal parameters. 
+    # cost = compute_cost(X_train, y_train, w_init, b_init)
+    # print(f'Cost at optimal w : {cost}')
 
     #Compute and display gradient 
     tmp_dj_db, tmp_dj_dw = compute_gradient(X_train, y_train, w_init, b_init)
@@ -46,7 +49,7 @@ def main():
 
     # initialize parameters
     initial_w = np.zeros_like(w_init)
-    initial_b = 0.
+    initial_b = 0.01
     iterations = 1000
     alpha = 5.0e-3
 
@@ -59,26 +62,44 @@ def main():
     for i in range(5):
         print(f"prediction: {np.dot(X_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
 
-    # plot cost versus iteration  
-    fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 4))
-    ax1.plot(J_hist)
-    ax2.plot(100 + np.arange(len(J_hist[100:])), J_hist[100:])
-    ax1.set_title("Cost vs. iteration");  ax2.set_title("Cost vs. iteration (tail)")
-    ax1.set_ylabel('Cost')             ;  ax2.set_ylabel('Cost') 
-    ax1.set_xlabel('iteration step')   ;  ax2.set_xlabel('iteration step') 
-    plt.show()
+    # # plot cost versus iteration  
+    # fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(12, 4))
+    # ax1.plot(J_hist)
+    # ax2.plot(100 + np.arange(len(J_hist[100:])), J_hist[100:])
+    # ax1.set_title("Cost vs. iteration");  ax2.set_title("Cost vs. iteration (tail)")
+    # ax1.set_ylabel('Cost')             ;  ax2.set_ylabel('Cost') 
+    # ax1.set_xlabel('iteration step')   ;  ax2.set_xlabel('iteration step') 
+    # plt.show()
 
     # Compute cost function for cross validation set
     print(compute_cost(X_cross, Y_cross, w_final, b_final))
+    small, medium, large = compute_error_bins(X_cross, Y_cross, w_final, b_final)
+    print(f"small error: {small}, medium error: {medium}, and large error: {large}")
 
-    # Plot for just numInQueue against Wait Time
-    plt.scatter(X_train, y_train)
-    plt.xlabel('Num in Queue')
-    plt.ylabel('Wait Time')
-    plt.title("Num In Queue vs Wait Time")
-    plt.axline((0, b_final), slope=w_final, linewidth=4, color='r')
-    plt.show()
+    # # Plot for just numInQueue against Wait Time
+    # plt.scatter(X_train, y_train)
+    # plt.xlabel('Num in Queue')
+    # plt.ylabel('Wait Time')
+    # plt.title("Num In Queue vs Wait Time")
+    # plt.axline((0, b_final), slope=w_final, linewidth=4, color='r')
+    # plt.show()
 
+
+def compute_error_bins(X, y, w, b):
+    m = X.shape[0]
+    small = 0
+    medium = 0
+    large = 0
+    for i in range(m):                                
+        f_wb_i = np.dot(X[i], w) + b           #(n,)(n,) = scalar (see np.dot)
+        diff = abs(f_wb_i - y[i])
+        if diff <= 2:
+            small += 1
+        elif diff >= 10:
+            large += 1    
+        else:
+            medium += 1   
+    return small, medium, large
 
 def predict_single_loop(x, w, b): 
     """
